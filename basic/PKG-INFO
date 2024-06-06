@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: cross_domain_ner
+Version: 0.1
+Summary: Cross-domain Named Entity Recognition for term project -- DSAI
+Author: Fatih Burak Karagoz
+Author-email: fatih.karagoz@std.bogazici.com
+CUDA: No
+CPU: aarch-64
+env/venv: 3.9.*
+Requires-Dist: transformers>=4.0.0
+Requires-Dist: datasets>=1.0
+Requires-Dist: seqeval
+Requires-Dist: python-docx
+Requires-Dist: scikit-learn
+Requires-Dist: pandas
+Requires-Dist: numpy
