@@ -1,6 +1,0 @@
-setup.py
-cross_domain_ner.egg-info/PKG-INFO
-cross_domain_ner.egg-info/SOURCES.txt
-cross_domain_ner.egg-info/dependency_links.txt
-cross_domain_ner.egg-info/requires.txt
-cross_domain_ner.egg-info/top_level.txt

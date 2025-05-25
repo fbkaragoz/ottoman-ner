@@ -1,7 +1,0 @@
-transformers>=4.0.0
-datasets>=1.0
-seqeval
-docx
-scikit-learn
-pandas
-numpy
