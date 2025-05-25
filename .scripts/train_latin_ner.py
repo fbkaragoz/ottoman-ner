@@ -27,7 +27,7 @@ class OttomanNERTrainer:
         
         # Load and prepare dataset
         self.dataset = load_dataset_from_conll(data_dir)
-        self.label2id, self.id2label = create_label_mappings(self.dataset)
+        self.label2id, self.id2label = create_label_mappings(self.dataset, data_dir)
         self.num_labels = len(self.label2id)
         
         logger.info(f"Dataset loaded: {self.dataset}")
@@ -91,11 +91,11 @@ class OttomanNERTrainer:
         
         # Remove ignored index (special tokens)
         true_predictions = [
-            [self.id2label[p] for (p, l) in zip(prediction, label) if l != -100]
+            [self.id2label[str(p)] for (p, l) in zip(prediction, label) if l != -100]
             for prediction, label in zip(predictions, labels)
         ]
         true_labels = [
-            [self.id2label[l] for (p, l) in zip(prediction, label) if l != -100]
+            [self.id2label[str(l)] for (p, l) in zip(prediction, label) if l != -100]
             for prediction, label in zip(predictions, labels)
         ]
         
