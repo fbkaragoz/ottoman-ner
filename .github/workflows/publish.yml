@@ -4,15 +4,6 @@ on:
   # Trigger on new releases
   release:
     types: [published]
-  
-  # Allow manual triggering
-  workflow_dispatch:
-    inputs:
-      test_pypi:
-        description: 'Publish to Test PyPI instead of PyPI'
-        required: false
-        default: false
-        type: boolean
 
 jobs:
   test:
@@ -77,25 +68,6 @@ jobs:
       with:
         name: dist
         path: dist/
-
-  publish-test:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event.inputs.test_pypi == 'true'
-    
-    steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: dist
-        path: dist/
-    
-    - name: Publish to Test PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        repository-url: https://test.pypi.org/legacy/
-        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        verbose: true
 
   publish-pypi:
     needs: build
