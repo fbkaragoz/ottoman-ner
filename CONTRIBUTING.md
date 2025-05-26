@@ -6,14 +6,14 @@ Thank you for your interest in contributing to Ottoman NER! This document provid
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
-   ```bash
+```bash
    git clone https://github.com/your-username/ottoman-ner.git
    cd ottoman-ner
-   ```
+```
 3. **Install in development mode**:
-   ```bash
-   pip install -e .[dev]
-   ```
+```bash
+pip install -e .[dev]
+```
 
 ## Development Setup
 
@@ -102,7 +102,7 @@ Add support for custom tokenizers
    ```
 
 4. **Commit and push**:
-   ```bash
+```bash
    git add .
    git commit -m "Your descriptive commit message"
    git push origin feature/your-feature-name
