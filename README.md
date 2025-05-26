@@ -19,7 +19,6 @@ I would like to express my sincere gratitude to
 **Assoc. Prof. Şaziye Betül Özateş** and the **Boğaziçi University Computational Linguistics Lab (BUColin)**  
 for their academic mentorship and foundational contributions to historical Turkish NLP.
 
-
 The vision of this project is to support future Ottoman Turkish NLP research not just with models,  
 but with **interpretable, extensible, and historically grounded resources** that bridge language, time, and region.
 
@@ -209,20 +208,25 @@ If you use this toolkit in your research, please cite:
 ```
 ---
 
-## Author Note (TR)
+## 🧠 Author Note (TR)
 
 > 2023–2025 akademik yılı boyunca bu proje üzerinde bireysel olarak çalıştım.  
-> Geniş ölçekli ve tarihsel olarak çeşitlendirilmiş bir Osmanlı Türkçesi veri setini manuel olarak derledim, hizaladım, temizledim ve çeşitli biçimlerde etiketledim.  
-> Özellikle OCR sonrası oluşan bozulmaları karakter düzeyinde normalize etmek, eksik harfleri ve diakritik işaretleri geri kazandırmak için çeşitli veri eşleştirme ve analiz yöntemleri geliştirdim.  
-> Bunun yanı sıra, Osmanlıca metinlerin tarihsel evrimini daha iyi anlamak için **token-level entropi analizi** uygulayarak Tanzimat öncesi ve sonrası dilsel karmaşıklık farklılıklarını ortaya koymaya çalıştım.  
->  
-> Ancak bu süreçte, bireysel olarak üstlendiğim bazı denemeler, özellikle yerel olarak geliştirdiğim çeşitli pipeline’lar ve modelleme girişimleri, hem kişisel sebeplerden hem de erken dönem amatörlüklerimden ötürü sistematik ve açık kaynaklı hale getirilemedi.  
-> Yine de bu süreç, hem teknik hem de entelektüel olarak gelişimimde çok önemli bir yer tuttu.  
->  
-> Bu projeyi ilk tasarladığım dönemin ardından bir süreliğine doğal dil işleme çalışmalarına ara verdim. Ancak bu aradan sonra, **hocam Şaziye Betül Özateş’in ilham verici rehberliği** ve kendi içsel motivasyonum sayesinde, projeye yeniden dönüş yaptım.  
->  
-> Sayın Özateş’in desteği, benim kişisel araştırmacı yolculuğumda sadece akademik değil, insani olarak da çok özel bir yer tutmaktadır.  
-> Kendisine ve **Boğaziçi Üniversitesi BUColin laboratuvarı** ekibine, hem önceki yayınlar hem de genel bilimsel katkıları nedeniyle içtenlikle teşekkür ederim.  
->  
-> Bu proje yalnızca teknik bir araç değil; aynı zamanda **geçmişin dijital belleği**,  
-> ve **gelecekte Osmanlı Türkçesi üzerine yapılacak dil teknolojileri çalışmalarının altyapısıdır.**
+> Geniş ölçekli, tarihsel olarak çeşitlendirilmiş bir Osmanlı Türkçesi veri setini; manuel olarak derledim, hizaladım, temizledim ve çok katmanlı biçimlerde etiketledim.  
+> Özellikle OCR sonrası oluşan bozulmaları karakter düzeyinde normalize etmek, eksik harfleri ve diakritik işaretleri geri kazandırmak için kendi veri eşleştirme, karşılaştırma ve analiz yöntemlerimi geliştirdim.  
+> Bunun yanı sıra, Osmanlıca metinlerin tarihsel evrimini daha iyi anlayabilmek adına **token-level entropi analizleri** uygulayarak, Tanzimat öncesi ve sonrası dilsel karmaşıklık farklarını istatistiksel olarak ortaya koymaya çalıştım.  
+>
+> Süreç içerisinde yerel ortamımda geliştirdiğim birçok pipeline ve modelleme denemesi, ilk baştaki amatörlüğüm ve çeşitli kişisel nedenlerden ötürü kamuya açık hale getirilemedi.  
+> Ancak bu zorlu aşamalar, hem teknik becerilerimi hem de araştırmacı kimliğimi geliştirmemde belirleyici oldu.  
+>
+> Projeyi ilk tasarladığım dönemden sonra doğal dil işleme çalışmalarına bir süreliğine ara verdim.  
+> Ancak geçen zaman içinde bu projenin yarım kalmaması gerektiğine, aksine **hak ettiği kapsama ve derinliğe kavuşturulması gerektiğine** dair içsel bir sorumluluk hissettim.  
+>
+> Bu noktada **hocam Şaziye Betül Özateş’e** olan şükran borcumu da ifade etmek isterim.  
+> Bu projeye yeniden dönerken taşıdığım motivasyonun bir kısmı da, **onun rehberliğinde başladığım bu alanı tamamlanmış bir katkıya dönüştürme iradesinden** doğdu.  
+>
+> Artık sahip olduğum daha profesyonel deneyim ve teknik bilgi birikimi ile bu projeyi kapsamlı biçimde büyütmeyi,  
+> açık kaynak yazılım hareketine ve tarihsel Türkçenin dijitalleştirilmesine somut katkılar sunmayı hedefliyorum.  
+>
+> Bu proje yalnızca teknik bir araç değil;  
+> **geçmişin dijital belleği**,  
+> ve **gelecekte Osmanlı Türkçesi üzerine yapılacak dil teknolojileri çalışmalarının açık, sürdürülebilir altyapısıdır.**
