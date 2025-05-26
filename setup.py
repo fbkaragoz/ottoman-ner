@@ -35,11 +35,11 @@ setup(
     name="ottoman-ner",
     version="2.0.0",
     author="Fatih Burak Karagöz",
-    author_email="fatihburakkarag@gmail.com",
+    author_email="fatihburak@pm.me",
     description="Ottoman Turkish Named Entity Recognition toolkit",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/fatihburakkarag/ottoman-ner",
+    url="https://github.com/fbkaragoz/ottoman-ner",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -91,7 +91,7 @@ setup(
         "bert",
     ],
     project_urls={
-        "Bug Reports": "https://github.com/fatihburakkarag/ottoman-ner/issues",
-        "Source": "https://github.com/fatihburakkarag/ottoman-ner",
+        "Bug Reports": "https://github.com/fbkaragoz/ottoman-ner/issues",
+        "Source": "https://github.com/fbkaragoz/ottoman-ner",
     },
 )

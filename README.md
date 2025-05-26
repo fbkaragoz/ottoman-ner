@@ -208,7 +208,7 @@ If you use this toolkit in your research, please cite:
 ```
 ---
 
-## 🧠 Author Note (TR)
+## Author Note (TR)
 
 > 2023–2025 akademik yılı boyunca bu proje üzerinde bireysel olarak çalıştım.  
 > Geniş ölçekli, tarihsel olarak çeşitlendirilmiş bir Osmanlı Türkçesi veri setini; manuel olarak derledim, hizaladım, temizledim ve çok katmanlı biçimlerde etiketledim.  
