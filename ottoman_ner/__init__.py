@@ -1,20 +1,78 @@
-from .core import NERPredictor
-from .model_config import AVAILABLE_MODELS
+"""
+Ottoman Turkish Named Entity Recognition Package
 
-# Import IO utilities
-from .io import load_conll_data, write_conll_data
+A professional, modular, and configuration-driven package for Ottoman Turkish NER.
+"""
 
-# Import evaluation utilities
-from .evaluation import get_predictions_in_conll_format, align_predictions_with_tokens
+__version__ = "2.0.0"
 
-__version__ = "0.2.0"
-__author__ = "Ottoman NER Team"
-__description__ = "Named Entity Recognition for Ottoman Turkish texts"
+# Configuration system
+from .configs import DataConfig, ModelConfig, TrainingConfig, EvaluationConfig
+
+# Models
+from .models import BaseNerModel, HuggingFaceNerModel, get_model
+
+# Data processing
+from .data import (
+    BaseDatasetLoader, CoNLLDatasetLoader, get_dataset_loader,
+    create_label_mappings, extract_labels_from_data, validate_bio_sequence
+)
+
+# Training
+from .training import HuggingFaceModelTrainer
+
+# Evaluation  
+from .evaluation import OttomanNEREvaluator
+
+# Legacy components (maintained for backward compatibility)
+from .data import ConllToLabelStudio, LabelStudioToConll, DataPreprocessor, EntityAnalyzer
+from .training import NERDataset
+
+# Utilities
+from .utils import setup_logging
+
 __all__ = [
-    "NERPredictor", 
-    "AVAILABLE_MODELS",
-    "load_conll_data",
-    "write_conll_data", 
-    "get_predictions_in_conll_format",
-    "align_predictions_with_tokens"
+    # Version
+    '__version__',
+    
+    # Configuration system
+    'DataConfig',
+    'ModelConfig', 
+    'TrainingConfig',
+    'EvaluationConfig',
+    
+    # Models
+    'BaseNerModel',
+    'HuggingFaceNerModel',
+    'get_model',
+    
+    # Data processing
+    'BaseDatasetLoader',
+    'CoNLLDatasetLoader', 
+    'get_dataset_loader',
+    'create_label_mappings',
+    'extract_labels_from_data',
+    'validate_bio_sequence',
+    
+    # Training
+    'HuggingFaceModelTrainer',
+    
+    # Evaluation
+    'OttomanNEREvaluator',
+    
+    # Legacy components
+    'ConllToLabelStudio',
+    'LabelStudioToConll', 
+    'DataPreprocessor',
+    'EntityAnalyzer',
+    'NERDataset',
+    
+    # Utilities
+    'setup_logging'
 ]
+
+# Package metadata
+__author__ = "Ottoman NER Team"
+__email__ = "contact@ottoman-ner.org"
+__description__ = "A professional package for Ottoman Turkish Named Entity Recognition"
+__url__ = "https://github.com/ottoman-ner/ottoman-ner"

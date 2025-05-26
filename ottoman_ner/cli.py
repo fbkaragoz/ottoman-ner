@@ -1,267 +1,219 @@
+#!/usr/bin/env python3
 """
-Command Line Interface for Ottoman NER.
+Ottoman NER Command Line Interface
 """
 
-import argparse
-import json
-import sys
+import click
 import logging
 from pathlib import Path
-from typing import Optional
 
-from ottoman_ner import NERPredictor
-from ottoman_ner.model_config import list_available_models
+from .training import OttomanNERTrainer
+from .data import ConllToLabelStudio, LabelStudioToConll, EntityAnalyzer
+from .evaluation import OttomanNEREvaluator
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def setup_parser() -> argparse.ArgumentParser:
-    """Setup the argument parser."""
-    parser = argparse.ArgumentParser(
-        description="Ottoman Turkish Named Entity Recognition CLI",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  ottoman-ner --text "Emin Bey'in kuklaları Tepebaşı'nda oynuyor"
-  ottoman-ner --input text.txt --output results.json --script arabic
-  ottoman-ner --input text.txt --script latin --confidence
-  ottoman-ner --list-models
-  ottoman-ner --model-info latin
-        """
-    )
-    
-    # Input options
-    input_group = parser.add_mutually_exclusive_group(required=False)
-    input_group.add_argument(
-        "--text", 
-        help="Input text to analyze"
-    )
-    input_group.add_argument(
-        "--input", 
-        help="Path to input text file"
-    )
-    
-    # Output options
-    parser.add_argument(
-        "--output", 
-        help="Path to save output JSON file (default: stdout)"
-    )
-    
-    # Model options
-    parser.add_argument(
-        "--script", 
-        choices=["arabic", "latin", "unified"], 
-        default="latin",
-        help="Script type for Ottoman text (default: latin)"
-    )
-    parser.add_argument(
-        "--model", 
-        help="Custom model path or HuggingFace model name"
-    )
-    parser.add_argument(
-        "--use-local", 
-        action="store_true",
-        help="Use local model instead of HuggingFace Hub"
-    )
-    
-    # Processing options
-    parser.add_argument(
-        "--confidence", 
-        action="store_true",
-        help="Include confidence scores in output"
-    )
-    parser.add_argument(
-        "--sentences", 
-        action="store_true",
-        help="Analyze text sentence by sentence"
-    )
-    parser.add_argument(
-        "--aggregation", 
-        choices=["simple", "first", "average", "max"],
-        default="simple",
-        help="Token aggregation strategy (default: simple)"
-    )
-    
-    # Information options
-    parser.add_argument(
-        "--list-models", 
-        action="store_true",
-        help="List all available models"
-    )
-    parser.add_argument(
-        "--model-info", 
-        metavar="MODEL",
-        help="Show information about a specific model"
-    )
-    
-    # Other options
-    parser.add_argument(
-        "--encoding", 
-        default="utf-8",
-        help="Input file encoding (default: utf-8)"
-    )
-    parser.add_argument(
-        "--verbose", "-v", 
-        action="store_true",
-        help="Enable verbose logging"
-    )
-    parser.add_argument(
-        "--version", 
-        action="version",
-        version="%(prog)s 0.2.0"
-    )
-    
-    return parser
 
-def list_models():
-    """List all available models."""
-    models_info = list_available_models()
-    
-    print("Available Ottoman NER Models:")
-    print("=" * 40)
-    
-    print("\nRemote Models (HuggingFace Hub):")
-    for name, path in models_info["remote_models"].items():
-        info = models_info["model_info"].get(name, {})
-        print(f"  {name:10} -> {path}")
-        if info:
-            print(f"             Description: {info.get('description', 'N/A')}")
-            print(f"             Entities: {', '.join(info.get('entities', []))}")
-    
-    print("\nLocal Models:")
-    for name, path in models_info["local_models"].items():
-        print(f"  {name:10} -> {path}")
-
-def show_model_info(model_name: str):
-    """Show detailed information about a model."""
-    models_info = list_available_models()
-    
-    if model_name not in models_info["model_info"]:
-        print(f"Model '{model_name}' not found.")
-        print(f"Available models: {', '.join(models_info['model_info'].keys())}")
-        return
-    
-    info = models_info["model_info"][model_name]
-    remote_path = models_info["remote_models"].get(model_name, "N/A")
-    local_path = models_info["local_models"].get(model_name, "N/A")
-    
-    print(f"Model Information: {model_name}")
-    print("=" * 40)
-    print(f"Description: {info.get('description', 'N/A')}")
-    print(f"Languages: {', '.join(info.get('languages', []))}")
-    print(f"Entities: {', '.join(info.get('entities', []))}")
-    print(f"Base Model: {info.get('base_model', 'N/A')}")
-    print(f"Remote Path: {remote_path}")
-    print(f"Local Path: {local_path}")
-
-def format_output(entities, include_confidence=True, format_type="json"):
-    """Format the output entities."""
-    if format_type == "json":
-        return json.dumps(entities, ensure_ascii=False, indent=2)
-    elif format_type == "text":
-        if not entities:
-            return "No entities found."
-        
-        output = []
-        if isinstance(entities, list):
-            # Simple entity list
-            for entity in entities:
-                conf_str = f" (confidence: {entity.get('confidence', 0):.3f})" if include_confidence and 'confidence' in entity else ""
-                output.append(f"{entity['text']} -> {entity['label']}{conf_str}")
-        elif isinstance(entities, dict) and "sentences" in entities:
-            # Sentence-level analysis
-            for sent in entities["sentences"]:
-                output.append(f"Sentence {sent['sentence_id']}: {sent['text']}")
-                if sent["entities"]:
-                    for entity in sent["entities"]:
-                        conf_str = f" (confidence: {entity.get('confidence', 0):.3f})" if include_confidence and 'confidence' in entity else ""
-                        output.append(f"  {entity['text']} -> {entity['label']}{conf_str}")
-                else:
-                    output.append("  No entities found.")
-                output.append("")
-        
-        return "\n".join(output)
-
-def main():
-    """Main CLI function."""
-    parser = setup_parser()
-    args = parser.parse_args()
-    
-    # Setup logging level
-    if args.verbose:
+@click.group()
+@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
+def cli(verbose):
+    """Ottoman Turkish NER toolkit."""
+    if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-    
-    # Handle information commands
-    if args.list_models:
-        list_models()
-        return
-    
-    if args.model_info:
-        show_model_info(args.model_info)
-        return
-    
-    # Validate input
-    if not args.text and not args.input:
-        parser.error("You must provide either --text or --input")
-    
-    # Determine model to use
-    if args.model:
-        model_name_or_path = args.model
-    else:
-        model_name_or_path = args.script
-    
-    try:
-        # Initialize predictor
-        logger.info(f"Loading model: {model_name_or_path}")
-        predictor = NERPredictor(
-            model_name_or_path=model_name_or_path,
-            aggregation_strategy=args.aggregation,
-            use_local=args.use_local
-        )
-        
-        # Get input text
-        if args.text:
-            input_text = args.text
-        else:
-            try:
-                with open(args.input, 'r', encoding=args.encoding) as f:
-                    input_text = f.read()
-            except FileNotFoundError:
-                logger.error(f"Input file not found: {args.input}")
-                sys.exit(1)
-            except UnicodeDecodeError:
-                logger.error(f"Failed to decode file with encoding: {args.encoding}")
-                sys.exit(1)
-        
-        # Perform prediction
-        logger.info("Performing NER prediction...")
-        if args.sentences:
-            result = predictor.predict_sentences(input_text, return_confidence=args.confidence)
-        else:
-            result = predictor.predict(input_text, return_confidence=args.confidence)
-        
-        # Format and output results
-        if args.output:
-            # Save to file
-            with open(args.output, 'w', encoding='utf-8') as f:
-                json.dump(result, f, ensure_ascii=False, indent=2)
-            logger.info(f"Results saved to: {args.output}")
-        else:
-            # Print to stdout
-            if args.verbose:
-                # Pretty text format for verbose mode
-                print(format_output(result, args.confidence, "text"))
-            else:
-                # JSON format for normal mode
-                print(format_output(result, args.confidence, "json"))
-    
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        if args.verbose:
-            import traceback
-            traceback.print_exc()
-        sys.exit(1)
 
-if __name__ == "__main__":
-    main()
+
+@cli.group()
+def train():
+    """Training commands."""
+    pass
+
+
+@cli.group()
+def data():
+    """Data processing commands."""
+    pass
+
+
+@cli.group()
+def evaluate():
+    """Evaluation commands."""
+    pass
+
+
+# Training commands
+@train.command()
+@click.argument('train_file', type=click.Path(exists=True))
+@click.argument('eval_file', type=click.Path(exists=True))
+@click.argument('output_dir', type=click.Path())
+@click.option('--model-name', default='dbmdz/bert-base-turkish-cased', help='HuggingFace model name')
+@click.option('--learning-rate', default=2e-5, type=float, help='Learning rate')
+@click.option('--batch-size', default=4, type=int, help='Batch size')
+@click.option('--epochs', default=3, type=int, help='Number of epochs')
+@click.option('--max-length', default=512, type=int, help='Maximum sequence length')
+def quick(train_file, eval_file, output_dir, model_name, learning_rate, batch_size, epochs, max_length):
+    """Quick training with default settings."""
+    click.echo(f"🚀 Starting quick training...")
+    click.echo(f"Train: {train_file}")
+    click.echo(f"Eval: {eval_file}")
+    click.echo(f"Output: {output_dir}")
+    
+    trainer = OttomanNERTrainer.quick_train(
+        train_file=train_file,
+        eval_file=eval_file,
+        output_dir=output_dir,
+        model_name=model_name,
+        learning_rate=learning_rate,
+        batch_size=batch_size,
+        num_epochs=epochs,
+        max_length=max_length
+    )
+    
+    click.echo("✅ Training completed!")
+
+
+@train.command()
+@click.argument('train_file', type=click.Path(exists=True))
+@click.argument('eval_file', type=click.Path(exists=True))
+@click.argument('output_dir', type=click.Path())
+@click.option('--model-name', default='dbmdz/bert-base-turkish-cased', help='HuggingFace model name')
+@click.option('--learning-rate', default=2e-5, type=float, help='Learning rate')
+@click.option('--batch-size', default=4, type=int, help='Batch size')
+@click.option('--epochs', default=3, type=int, help='Number of epochs')
+@click.option('--weight-decay', default=0.01, type=float, help='Weight decay')
+@click.option('--save-steps', default=500, type=int, help='Save every N steps')
+@click.option('--eval-steps', default=500, type=int, help='Evaluate every N steps')
+@click.option('--logging-steps', default=50, type=int, help='Log every N steps')
+@click.option('--seed', default=42, type=int, help='Random seed')
+@click.option('--max-length', default=512, type=int, help='Maximum sequence length')
+def advanced(train_file, eval_file, output_dir, model_name, learning_rate, batch_size, 
+             epochs, weight_decay, save_steps, eval_steps, logging_steps, seed, max_length):
+    """Advanced training with custom parameters."""
+    click.echo(f"🚀 Starting advanced training...")
+    
+    trainer = OttomanNERTrainer(model_name=model_name, output_dir=output_dir)
+    trainer.setup_model()
+    trainer.prepare_datasets(train_file, eval_file, max_length)
+    
+    trainer.train(
+        learning_rate=learning_rate,
+        batch_size=batch_size,
+        num_epochs=epochs,
+        weight_decay=weight_decay,
+        save_steps=save_steps,
+        eval_steps=eval_steps,
+        logging_steps=logging_steps,
+        seed=seed
+    )
+    
+    click.echo("✅ Training completed!")
+
+
+# Data processing commands
+@data.command()
+@click.argument('conll_file', type=click.Path(exists=True))
+@click.argument('output_file', type=click.Path())
+@click.option('--task-prefix', default='ottoman_ner', help='Task ID prefix')
+def conll_to_labelstudio(conll_file, output_file, task_prefix):
+    """Convert CONLL format to Label Studio JSON."""
+    converter = ConllToLabelStudio()
+    num_tasks = converter.convert_file(conll_file, output_file, task_prefix)
+    click.echo(f"✅ Converted {num_tasks} tasks from {conll_file} to {output_file}")
+
+
+@data.command()
+@click.argument('json_file', type=click.Path(exists=True))
+@click.argument('output_file', type=click.Path())
+@click.option('--use-latest/--use-first', default=True, help='Use latest or first annotation')
+def labelstudio_to_conll(json_file, output_file, use_latest):
+    """Convert Label Studio JSON to CONLL format."""
+    converter = LabelStudioToConll()
+    num_sentences = converter.convert_file(json_file, output_file, use_latest)
+    click.echo(f"✅ Converted {num_sentences} sentences from {json_file} to {output_file}")
+
+
+@data.command()
+@click.argument('files', nargs=-1, type=click.Path(exists=True), required=True)
+@click.option('--detailed/--summary', default=True, help='Show detailed analysis')
+def analyze(files, detailed):
+    """Analyze CONLL dataset files."""
+    analyzer = EntityAnalyzer()
+    
+    if len(files) == 1:
+        analysis = analyzer.analyze_conll_file(files[0])
+        analyzer.print_analysis(analysis, detailed)
+    else:
+        comparison = analyzer.compare_datasets(*files)
+        for name, analysis in comparison['individual_analyses'].items():
+            analyzer.print_analysis(analysis, detailed=False)
+        
+        # Print comparison summary
+        summary = comparison['summary_comparison']
+        click.echo(f"\n{'='*60}")
+        click.echo("DATASET COMPARISON SUMMARY")
+        click.echo(f"{'='*60}")
+        
+        for name, sizes in summary['dataset_sizes'].items():
+            click.echo(f"{name:>15}: {sizes['sentences']:>6} sentences, {sizes['tokens']:>8} tokens, {sizes['entities']:>6} entities")
+
+
+@data.command()
+@click.argument('input_dir', type=click.Path(exists=True))
+@click.argument('output_dir', type=click.Path())
+@click.option('--train-ratio', default=0.7, type=float, help='Training set ratio')
+@click.option('--dev-ratio', default=0.15, type=float, help='Development set ratio')
+@click.option('--test-ratio', default=0.15, type=float, help='Test set ratio')
+@click.option('--seed', default=42, type=int, help='Random seed')
+def split(input_dir, output_dir, train_ratio, dev_ratio, test_ratio, seed):
+    """Split dataset into train/dev/test sets."""
+    # This would need to be implemented
+    click.echo("Dataset splitting functionality to be implemented...")
+
+
+# Evaluation commands
+@evaluate.command()
+@click.argument('model_path', type=click.Path(exists=True))
+@click.argument('test_file', type=click.Path(exists=True))
+@click.option('--output-dir', type=click.Path(), help='Output directory for results')
+@click.option('--save-predictions/--no-save-predictions', default=True, help='Save detailed predictions')
+@click.option('--batch-size', default=8, type=int, help='Evaluation batch size')
+def model(model_path, test_file, output_dir, save_predictions, batch_size):
+    """Evaluate a trained model."""
+    if not output_dir:
+        output_dir = f"results/eval_{Path(model_path).name}"
+    
+    click.echo(f"🔍 Evaluating model: {model_path}")
+    click.echo(f"Test file: {test_file}")
+    click.echo(f"Output: {output_dir}")
+    
+    evaluator = OttomanNEREvaluator(model_path)
+    results = evaluator.evaluate_file(
+        test_file, 
+        output_dir=output_dir,
+        save_predictions=save_predictions,
+        batch_size=batch_size
+    )
+    
+    click.echo("✅ Evaluation completed!")
+    click.echo(f"Overall F1: {results['overall']['f1']:.3f}")
+
+
+@evaluate.command()
+@click.argument('predictions_file', type=click.Path(exists=True))
+def analyze_failures(predictions_file):
+    """Analyze prediction failures from detailed predictions JSON."""
+    # This would use the analyze_failures.py logic
+    click.echo("Failure analysis functionality to be implemented...")
+
+
+# Legacy compatibility commands
+@cli.command()
+@click.argument('text')
+def predict(text):
+    """Predict entities in text (requires trained model)."""
+    click.echo("Prediction functionality to be implemented...")
+
+
+if __name__ == '__main__':
+    cli()
