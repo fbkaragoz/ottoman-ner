@@ -10,7 +10,7 @@ import sys
 import logging
 import json
 from pathlib import Path
-from typing import Optional, List
+
 
 # Import core functionality
 from .core import OttomanNER
