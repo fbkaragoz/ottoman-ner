@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ottoman-ner"
-version = "2.0.0"
+version = "2.0.1"
 description = "Ottoman Turkish Named Entity Recognition toolkit"
 readme = "README.md"
 license = {text = "MIT"}
@@ -80,6 +80,7 @@ Homepage = "https://github.com/fbkaragoz/ottoman-ner"
 Repository = "https://github.com/fbkaragoz/ottoman-ner"
 Issues = "https://github.com/fbkaragoz/ottoman-ner/issues"
 Documentation = "https://github.com/fbkaragoz/ottoman-ner#readme"
+PyPI = "https://pypi.org/project/ottoman-ner/"
 
 [tool.setuptools.packages.find]
 where = ["."]
