@@ -42,12 +42,14 @@ pip install -e .[dev]
 
 ### Testing
 ```bash
-# Run tests (when available)
-pytest
+# Test the CLI
+ottoman-ner --help
 
-# Check code style
-black ottoman_ner/
-flake8 ottoman_ner/
+# Test basic functionality
+python -c "from ottoman_ner import OttomanNER; print('Import successful')"
+
+# Test package installation
+pip install -e .
 ```
 
 ### Commit Guidelines
@@ -79,9 +81,8 @@ Add support for custom tokenizers
 
 ### Code Contributions
 - Start with small, focused changes
-- Add tests for new functionality
 - Update documentation as needed
-- Ensure all tests pass
+- Ensure functionality works correctly
 
 ## Pull Request Process
 
@@ -115,26 +116,25 @@ Add support for custom tokenizers
 
 ## Code Organization
 
-The project follows a simple structure:
+The project follows a simple, focused structure:
 
 ```
 ottoman_ner/
-├── core.py          # Main OttomanNER class
+├── __init__.py      # Package initialization
+├── core.py          # Main OttomanNER class with all functionality
 ├── cli.py           # Command-line interface
-├── configs/         # Configuration classes
-├── data/            # Data processing
-├── models/          # Model implementations
-├── training/        # Training logic
-├── evaluation/      # Evaluation framework
-└── utils/           # Utilities
+├── py.typed         # Type hints marker
+└── utils/
+    ├── __init__.py
+    └── logging_utils.py  # Logging utilities
 ```
 
 ### Adding New Features
 
-1. **Core functionality** goes in `core.py`
+1. **Core NER functionality** goes in `core.py`
 2. **CLI commands** are added to `cli.py`
-3. **Configuration options** go in `configs/`
-4. **New models** implement the base model interface
+3. **Utility functions** go in `utils/`
+4. **Keep it simple** - this is a focused NER package
 
 ## Documentation
 
