@@ -1,0 +1,104 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ottoman-ner"
+version = "2.0.0"
+description = "Ottoman Turkish Named Entity Recognition toolkit"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Fatih Burak Karagöz", email = "fatihburak@pm.me"}
+]
+maintainers = [
+    {name = "Fatih Burak Karagöz", email = "fatihburak@pm.me"}
+]
+keywords = [
+    "nlp",
+    "ner", 
+    "named-entity-recognition",
+    "ottoman-turkish",
+    "transformers",
+    "bert",
+    "historical-nlp"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "torch>=1.9.0",
+    "transformers>=4.20.0",
+    "tokenizers>=0.12.0",
+    "datasets>=2.0.0",
+    "accelerate>=1.7.0",
+    "safetensors>=0.5.3",
+    "numpy>=1.21.0",
+    "pandas>=1.3.0",
+    "scikit-learn>=1.0.0",
+    "seqeval>=1.2.0",
+    "conllu>=4.5.3",
+    "PyYAML>=6.0",
+    "tqdm>=4.62.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0.0",
+    "pytest-cov>=2.12.0",
+    "black>=21.0.0",
+    "isort>=5.9.0",
+    "flake8>=3.9.0",
+    "mypy>=0.910",
+    "pre-commit>=2.15.0",
+]
+full = [
+    "tensorboard>=2.8.0",
+    "wandb>=0.12.0",
+    "mlflow>=2.0.0",
+    "matplotlib>=3.5.0",
+    "seaborn>=0.11.0",
+]
+
+[project.scripts]
+ottoman-ner = "ottoman_ner.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/fbkaragoz/ottoman-ner"
+Repository = "https://github.com/fbkaragoz/ottoman-ner"
+Issues = "https://github.com/fbkaragoz/ottoman-ner/issues"
+Documentation = "https://github.com/fbkaragoz/ottoman-ner#readme"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ottoman_ner*"]
+
+[tool.setuptools.package-data]
+ottoman_ner = ["py.typed"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true 

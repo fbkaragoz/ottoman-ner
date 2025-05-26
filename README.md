@@ -1,80 +1,82 @@
 # Ottoman NER
 
+**A focused toolkit for Ottoman Turkish Named Entity Recognition**
 
-![Ottominer Icon](./assets/ottominer_icon.png)
-
----
-
-## Project Background & Acknowledgments
-
-This project is the result of an intensive year-long effort (2023–2024) to build and extend the foundational infrastructure for **Named Entity Recognition (NER)** in **Ottoman Turkish**, a historically rich yet computationally underrepresented variant of the Turkish language.
-
-While parts of this work build on previously published resources under the [BUColin Lab](https://huggingface.co/bucolin) and related publications ([Karagöz et al., 2024](https://aclanthology.org/2024.sigturk-1.6.pdf), [Özateş et al., 2024](https://arxiv.org/pdf/2501.04828)), a significant portion of the data gathering, entropy analysis, corpus curation, OCR normalization, diacritic restoration, and experimental NER pipeline construction reflected in this repository was conducted independently during the 2023–2024 academic year.
-
-> **This was never a “quick patch” project — it was a language engineering journey.**
-
-### 🙏 Special Thanks
-
-I would like to express my sincere gratitude to  
-**Assoc. Prof. Şaziye Betül Özateş** and the **Boğaziçi University Computational Linguistics Lab (BUColin)**  
-for their academic mentorship and foundational contributions to historical Turkish NLP.
-
-The vision of this project is to support future Ottoman Turkish NLP research not just with models,  
-but with **interpretable, extensible, and historically grounded resources** that bridge language, time, and region.
-
-### References
-
-- **BUColin Lab on Hugging Face**: [https://huggingface.co/bucolin](https://huggingface.co/bucolin)  
-- **Ottoman NLP Group Repository**: [https://github.com/Ottoman-NLP](https://github.com/Ottoman-NLP)  
-- **Karagöz et al. (2024)** — *“Towards a Clean Text Corpus for Ottoman Turkish”*  
-  [ACL Anthology](https://aclanthology.org/2024.sigturk-1.6.pdf)  
-- **Özateş et al. (2025)** — *“Building Foundations for Natural Language Processing of Historical Turkish: Resources and Models”*  
-  [arXiv:2501.04828](https://arxiv.org/pdf/2501.04828)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/ottoman-ner.svg)](https://badge.fury.io/py/ottoman-ner)
 
 ---
 
-## Features
+## About
 
-- **Simple Interface**: Single class for all NER operations
-- **Pre-trained Models**: Ready-to-use models for Ottoman Turkish
-- **Easy Training**: Train custom models with JSON configuration
-- **Built-in Evaluation**: Comprehensive evaluation metrics
-- **Fast Prediction**: Real-time entity recognition
+Ottoman NER is a specialized Python package for **Named Entity Recognition (NER)** in **Ottoman Turkish** texts. This package provides a clean, modern interface for training, evaluating, and using NER models specifically designed for historical Ottoman Turkish documents.
+
+### Key Features
+
+- 🎯 **Focused NER Solution**: Dedicated solely to Ottoman Turkish named entity recognition
+- 🚀 **Simple API**: Single class interface for all NER operations
+- ⚙️ **Easy Training**: Train custom models with JSON configuration
+- 📊 **Built-in Evaluation**: Comprehensive evaluation metrics with seqeval
+- 🔮 **Fast Prediction**: Real-time entity recognition
+- 🛠️ **CLI Interface**: Command-line tools for all operations
+- 📦 **PyPI Ready**: Easy installation via pip
+
+### Supported Entity Types
+
+- **PER**: Person names (Sultan Abdülhamid, Ahmet Paşa)
+- **LOC**: Locations (İstanbul, Rumeli, Anadolu)
+- **ORG**: Organizations (Divan-ı Hümayun, Meclis-i Mebusan)
+- **MISC**: Miscellaneous entities (dates, events, titles)
+
+---
 
 ## Installation
 
+### From PyPI (Recommended)
+
 ```bash
-# Install from source
-git clone https://github.com/fatihburakkarag/ottoman-ner.git
+pip install ottoman-ner
+```
+
+### From Source
+
+```bash
+git clone https://github.com/fbkaragoz/ottoman-ner.git
 cd ottoman-ner
 pip install -e .
 
-# Install with full features (optional)
+# Install with development dependencies
+pip install -e .[dev]
+
+# Install with full features (visualization, experiment tracking)
 pip install -e .[full]
 ```
 
+---
+
 ## Quick Start
 
-### 1. Load and Use a Pre-trained Model
+### 1. Using Pre-trained Models
 
 ```python
 from ottoman_ner import OttomanNER
 
-# Initialize
+# Initialize the NER system
 ner = OttomanNER()
 
-# Load a trained model
+# Load a pre-trained model
 ner.load_model("models_hub/ner/ottoman-ner-standard")
 
 # Make predictions
 text = "Sultan Abdülhamid İstanbul'da yaşıyordu."
 entities = ner.predict(text)
 
-print(entities)
-# [{'text': 'Sultan Abdülhamid', 'label': 'PER', 'start': 0, 'end': 16, 'confidence': 0.99}]
+for entity in entities:
+    print(f"{entity['text']} -> {entity['label']} ({entity['confidence']:.2f})")
 ```
 
-### 2. Train a Custom Model
+### 2. Training Custom Models
 
 ```python
 from ottoman_ner import OttomanNER
@@ -82,54 +84,69 @@ from ottoman_ner import OttomanNER
 # Initialize
 ner = OttomanNER()
 
-# Train from configuration
+# Train from configuration file
 results = ner.train_from_config("configs/training.json")
+print(f"Training completed! F1 Score: {results['eval_f1']:.4f}")
 ```
 
-### 3. Evaluate a Model
+### 3. Model Evaluation
 
 ```python
 from ottoman_ner import OttomanNER
 
-# Initialize
+# Initialize and evaluate
 ner = OttomanNER()
-
-# Evaluate
 results = ner.evaluate(
     model_path="models_hub/ner/ottoman-ner-standard",
     test_file="data/test.txt"
 )
 
 print(f"F1 Score: {results['overall_f1']:.4f}")
+print(f"Precision: {results['overall_precision']:.4f}")
+print(f"Recall: {results['overall_recall']:.4f}")
 ```
+
+---
 
 ## Command Line Interface
 
-### Train a Model
+Ottoman NER provides a comprehensive CLI for all operations:
+
+### Training
 
 ```bash
+# Train a new model
 ottoman-ner train --config configs/training.json
+
+# Train with verbose output
+ottoman-ner --verbose train --config configs/training.json
 ```
 
-### Evaluate a Model
+### Evaluation
 
 ```bash
-ottoman-ner eval --model-path models/my-model --test-file data/test.txt
+# Evaluate a trained model
+ottoman-ner eval --model-path models_hub/ner/ottoman-ner-standard --test-file data/test.txt
+
+# Save evaluation results
+ottoman-ner eval --model-path models_hub/ner/ottoman-ner-standard --test-file data/test.txt --output-dir results/
 ```
 
-### Make Predictions
+### Prediction
 
 ```bash
-# Single text
-ottoman-ner predict --model-path models/my-model --text "Sultan Abdülhamid"
+# Predict on single text
+ottoman-ner predict --model-path models_hub/ner/ottoman-ner-standard --text "Sultan Abdülhamid İstanbul'da yaşıyordu"
 
-# From file
-ottoman-ner predict --model-path models/my-model --input-file input.txt --output-file predictions.json
+# Predict on file
+ottoman-ner predict --model-path models_hub/ner/ottoman-ner-standard --input-file input.txt --output-file predictions.json
 ```
+
+---
 
 ## Configuration
 
-Create a simple JSON configuration file for training:
+Create a training configuration file in JSON format:
 
 ```json
 {
@@ -150,14 +167,21 @@ Create a simple JSON configuration file for training:
     "output_dir": "models/my-model",
     "num_train_epochs": 3,
     "per_device_train_batch_size": 4,
-    "learning_rate": 2e-5
+    "learning_rate": 2e-5,
+    "eval_strategy": "steps",
+    "eval_steps": 100,
+    "save_steps": 100,
+    "load_best_model_at_end": true,
+    "metric_for_best_model": "eval_f1"
   }
 }
 ```
 
+---
+
 ## Data Format
 
-The toolkit expects CoNLL format data:
+Ottoman NER expects CoNLL format data with BIO tagging:
 
 ```
 Sultan B-PER
@@ -166,67 +190,76 @@ Abdülhamid I-PER
 'da O
 yaşıyordu O
 . O
+
+Osmanlı B-ORG
+Devleti I-ORG
+'nin O
+başkenti O
+İstanbul B-LOC
+'dur O
+. O
 ```
 
-## Supported Entity Types
+---
 
-- **PER**: Person names
-- **LOC**: Locations
-- **ORG**: Organizations
-- **MISC**: Miscellaneous entities
+## Project Background & Acknowledgments
+
+This project builds upon foundational work in Ottoman Turkish NLP and represents a focused effort to provide a clean, maintainable NER solution for historical Turkish texts.
+
+### References
+
+- **Karagöz et al. (2024)** — *"Towards a Clean Text Corpus for Ottoman Turkish"* [ACL Anthology](https://aclanthology.org/2024.sigturk-1.6.pdf)
+- **Özateş et al. (2025)** — *"Building Foundations for Natural Language Processing of Historical Turkish: Resources and Models"* [arXiv:2501.04828](https://arxiv.org/pdf/2501.04828)
+
+### Special Thanks
+
+Sincere gratitude to **Assoc. Prof. Şaziye Betül Özateş** and the **Boğaziçi University Computational Linguistics Lab (BUColin)** for their foundational contributions to historical Turkish NLP.
+
+---
 
 ## Requirements
 
 - Python 3.8+
 - PyTorch 1.9+
 - Transformers 4.20+
-- See `requirements.txt` for full dependencies
+- See `requirements.txt` for complete dependencies
 
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
+---
 
 ## Contributing
 
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if needed
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
 
 ## Citation
 
-If you use this toolkit in your research, please cite:
+If you use Ottoman NER in your research, please cite:
 
 ```bibtex
 @software{ottoman_ner_2024,
   title={Ottoman NER: A Toolkit for Ottoman Turkish Named Entity Recognition},
   author={Karagöz, Fatih Burak},
   year={2024},
-  url={https://github.com/fbkaragoz/ottoman-ner}
+  url={https://github.com/fbkaragoz/ottoman-ner},
+  version={2.0.0}
 }
 ```
+
 ---
 
-## Author Note (TR)
+## Related Projects
 
-> 2023–2025 akademik yılı boyunca bu proje üzerinde bireysel olarak çalıştım.  
-> Geniş ölçekli, tarihsel olarak çeşitlendirilmiş bir Osmanlı Türkçesi veri setini; manuel olarak derledim, hizaladım, temizledim ve çok katmanlı biçimlerde etiketledim.  
-> Özellikle OCR sonrası oluşan bozulmaları karakter düzeyinde normalize etmek, eksik harfleri ve diakritik işaretleri geri kazandırmak için kendi veri eşleştirme, karşılaştırma ve analiz yöntemlerimi geliştirdim.  
-> Bunun yanı sıra, Osmanlıca metinlerin tarihsel evrimini daha iyi anlayabilmek adına **token-level entropi analizleri** uygulayarak, Tanzimat öncesi ve sonrası dilsel karmaşıklık farklarını istatistiksel olarak ortaya koymaya çalıştım.  
->
-> Süreç içerisinde yerel ortamımda geliştirdiğim birçok pipeline ve modelleme denemesi, ilk baştaki amatörlüğüm ve çeşitli kişisel nedenlerden ötürü kamuya açık hale getirilemedi.  
-> Ancak bu zorlu aşamalar, hem teknik becerilerimi hem de araştırmacı kimliğimi geliştirmemde belirleyici oldu.  
->
-> Projeyi ilk tasarladığım dönemden sonra doğal dil işleme çalışmalarına bir süreliğine ara verdim.  
-> Ancak geçen zaman içinde bu projenin yarım kalmaması gerektiğine, aksine **hak ettiği kapsama ve derinliğe kavuşturulması gerektiğine** dair içsel bir sorumluluk hissettim.  
->
-> Bu noktada **hocam Şaziye Betül Özateş’e** olan şükran borcumu da ifade etmek isterim.  
-> Bu projeye yeniden dönerken taşıdığım motivasyonun bir kısmı da, **onun rehberliğinde başladığım bu alanı tamamlanmış bir katkıya dönüştürme iradesinden** doğdu.  
->
-> Artık sahip olduğum daha profesyonel deneyim ve teknik bilgi birikimi ile bu projeyi kapsamlı biçimde büyütmeyi,  
-> açık kaynak yazılım hareketine ve tarihsel Türkçenin dijitalleştirilmesine somut katkılar sunmayı hedefliyorum.  
->
-> Bu proje yalnızca teknik bir araç değil;  
-> **geçmişin dijital belleği**,  
-> ve **gelecekte Osmanlı Türkçesi üzerine yapılacak dil teknolojileri çalışmalarının açık, sürdürülebilir altyapısıdır.**
+For broader Ottoman Turkish NLP research and experimental tools, see the upcoming **`ottominer`** repository (coming soon).
