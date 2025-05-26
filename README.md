@@ -1,260 +1,228 @@
-# Ottoman NER - Named Entity Recognition for Ottoman Turkish
+# Ottoman NER
 
-A comprehensive Python package for Named Entity Recognition (NER) in Ottoman Turkish texts, supporting both Latin and Arabic scripts.
+
+![Ottominer Icon](./assets/ottominer_icon.png)
+
+---
+
+## Project Background & Acknowledgments
+
+This project is the result of an intensive year-long effort (2023–2024) to build and extend the foundational infrastructure for **Named Entity Recognition (NER)** in **Ottoman Turkish**, a historically rich yet computationally underrepresented variant of the Turkish language.
+
+While parts of this work build on previously published resources under the [BUColin Lab](https://huggingface.co/bucolin) and related publications ([Karagöz et al., 2024](https://aclanthology.org/2024.sigturk-1.6.pdf), [Özateş et al., 2024](https://arxiv.org/pdf/2501.04828)), a significant portion of the data gathering, entropy analysis, corpus curation, OCR normalization, diacritic restoration, and experimental NER pipeline construction reflected in this repository was conducted independently during the 2023–2024 academic year.
+
+> **This was never a “quick patch” project — it was a language engineering journey.**
+
+### 🙏 Special Thanks
+
+I would like to express my sincere gratitude to  
+**Assoc. Prof. Şaziye Betül Özateş** and the **Boğaziçi University Computational Linguistics Lab (BUColin)**  
+for their academic mentorship and foundational contributions to historical Turkish NLP.
+
+
+The vision of this project is to support future Ottoman Turkish NLP research not just with models,  
+but with **interpretable, extensible, and historically grounded resources** that bridge language, time, and region.
+
+### References
+
+- **BUColin Lab on Hugging Face**: [https://huggingface.co/bucolin](https://huggingface.co/bucolin)  
+- **Ottoman NLP Group Repository**: [https://github.com/Ottoman-NLP](https://github.com/Ottoman-NLP)  
+- **Karagöz et al. (2024)** — *“Towards a Clean Text Corpus for Ottoman Turkish”*  
+  [ACL Anthology](https://aclanthology.org/2024.sigturk-1.6.pdf)  
+- **Özateş et al. (2025)** — *“Building Foundations for Natural Language Processing of Historical Turkish: Resources and Models”*  
+  [arXiv:2501.04828](https://arxiv.org/pdf/2501.04828)
+
+---
 
 ## Features
 
-- **Multi-script Support**: Latin and Arabic script Ottoman Turkish
-- **Pre-trained Models**: Ready-to-use models via HuggingFace Hub
-- **Command Line Interface**: Easy-to-use CLI for quick predictions
-- **Programmatic API**: Full Python API for integration
-- **Evaluation Pipeline**: Comprehensive evaluation tools for model assessment
-- **CONLL Format Support**: Industry-standard data format handling
-- **Batch Processing**: Efficient processing of multiple texts
+- **Simple Interface**: Single class for all NER operations
+- **Pre-trained Models**: Ready-to-use models for Ottoman Turkish
+- **Easy Training**: Train custom models with JSON configuration
+- **Built-in Evaluation**: Comprehensive evaluation metrics
+- **Fast Prediction**: Real-time entity recognition
 
 ## Installation
 
 ```bash
-pip install ottoman-ner
-```
-
-Or install from source:
-
-```bash
-git clone https://github.com/yourusername/ottoman-ner.git
+# Install from source
+git clone https://github.com/fatihburakkarag/ottoman-ner.git
 cd ottoman-ner
 pip install -e .
+
+# Install with full features (optional)
+pip install -e .[full]
 ```
 
 ## Quick Start
 
-### Command Line Usage
-
-```bash
-# Analyze a single text
-ottoman-ner --text "Emin Bey'in kuklaları Tepebaşı'nda oynuyor"
-
-# Process a file
-ottoman-ner --input text.txt --output results.json --script latin
-
-# Use Arabic script model
-ottoman-ner --text "عثمان پاشا استانبولدا یاشیور" --script arabic
-```
-
-### Python API
+### 1. Load and Use a Pre-trained Model
 
 ```python
-from ottoman_ner import NERPredictor
+from ottoman_ner import OttomanNER
 
-# Initialize predictor
-predictor = NERPredictor("latin")
+# Initialize
+ner = OttomanNER()
 
-# Predict entities
-text = "Emin Bey'in kuklaları Tepebaşı'nda oynuyor"
-entities = predictor.predict(text)
+# Load a trained model
+ner.load_model("models_hub/ner/ottoman-ner-standard")
 
-for entity in entities:
-    print(f"{entity['text']} -> {entity['label']} (confidence: {entity['confidence']:.3f})")
+# Make predictions
+text = "Sultan Abdülhamid İstanbul'da yaşıyordu."
+entities = ner.predict(text)
+
+print(entities)
+# [{'text': 'Sultan Abdülhamid', 'label': 'PER', 'start': 0, 'end': 16, 'confidence': 0.99}]
 ```
 
-## Evaluation Pipeline
-
-The package includes a comprehensive evaluation pipeline for assessing model performance against gold-standard annotations.
-
-### CONLL Data Utilities
+### 2. Train a Custom Model
 
 ```python
-from ottoman_ner.io import load_conll_data, write_conll_data
+from ottoman_ner import OttomanNER
 
-# Load CONLL format data
-data = load_conll_data("data/annotations.conll")
+# Initialize
+ner = OttomanNER()
 
-# Write CONLL format data
-write_conll_data(data, "output.conll")
+# Train from configuration
+results = ner.train_from_config("configs/training.json")
 ```
 
-### Model Evaluation
+### 3. Evaluate a Model
 
-Evaluate your model against gold-standard CONLL annotations:
+```python
+from ottoman_ner import OttomanNER
+
+# Initialize
+ner = OttomanNER()
+
+# Evaluate
+results = ner.evaluate(
+    model_path="models_hub/ner/ottoman-ner-standard",
+    test_file="data/test.txt"
+)
+
+print(f"F1 Score: {results['overall_f1']:.4f}")
+```
+
+## Command Line Interface
+
+### Train a Model
 
 ```bash
-# Basic evaluation
-python scripts/evaluate_latin_ner.py \
-    --gold_file_path data/test.conll \
-    --model_identifier latin
-
-# Detailed evaluation with visualizations
-python scripts/evaluate_latin_ner.py \
-    --gold_file_path data/test.conll \
-    --model_identifier ./models/my_model \
-    --output_dir results/ \
-    --save_predictions \
-    --verbose
+ottoman-ner train --config configs/training.json
 ```
 
-### Dataset Splitting
-
-Split large CONLL datasets into train/dev/test sets:
+### Evaluate a Model
 
 ```bash
-# Split with default ratios (70/15/15)
-python scripts/split_conll_dataset.py \
-    --input_conll_file data/full_dataset.conll \
-    --output_dir data/splits/
-
-# Custom ratios with shuffling
-python scripts/split_conll_dataset.py \
-    --input_conll_file data/annotations.conll \
-    --output_dir data/ \
-    --train_ratio 0.8 \
-    --dev_ratio 0.1 \
-    --test_ratio 0.1 \
-    --seed 42
+ottoman-ner eval --model-path models/my-model --test-file data/test.txt
 ```
 
-## Evaluation Pipeline Components
+### Make Predictions
 
-### 1. CONLL Data Utilities (`ottoman_ner.io.conll`)
+```bash
+# Single text
+ottoman-ner predict --model-path models/my-model --text "Sultan Abdülhamid"
 
-- **`load_conll_data(file_path)`**: Load CONLL format files
-- **`write_conll_data(data, file_path)`**: Write data in CONLL format
-- **`validate_conll_data(data)`**: Validate CONLL data consistency
-- **`get_conll_statistics(data)`**: Get dataset statistics
+# From file
+ottoman-ner predict --model-path models/my-model --input-file input.txt --output-file predictions.json
+```
 
-### 2. Prediction Alignment (`ottoman_ner.evaluation.alignment`)
+## Configuration
 
-- **`get_predictions_in_conll_format(predictor, sentences_tokens)`**: Convert model predictions to CONLL format
-- **`align_predictions_with_tokens(tokens, predictions, sentence_text)`**: Align predictions with original tokenization
+Create a simple JSON configuration file for training:
 
-### 3. Evaluation Scripts
-
-#### `scripts/evaluate_latin_ner.py`
-Comprehensive model evaluation with:
-- Precision, Recall, F1-score metrics
-- Per-entity type analysis
-- Visualization generation
-- Detailed prediction analysis
-
-#### `scripts/split_conll_dataset.py`
-Dataset splitting utility with:
-- Configurable train/dev/test ratios
-- Optional shuffling with seed control
-- Distribution analysis
-- Validation checks
+```json
+{
+  "experiment": {
+    "experiment_name": "my-ottoman-ner"
+  },
+  "model": {
+    "model_name_or_path": "dbmdz/bert-base-turkish-cased",
+    "num_labels": 9
+  },
+  "data": {
+    "train_file": "data/train.txt",
+    "dev_file": "data/dev.txt",
+    "test_file": "data/test.txt",
+    "max_length": 512
+  },
+  "training": {
+    "output_dir": "models/my-model",
+    "num_train_epochs": 3,
+    "per_device_train_batch_size": 4,
+    "learning_rate": 2e-5
+  }
+}
+```
 
 ## Data Format
 
-The package supports CONLL format with IOB2 tagging scheme:
+The toolkit expects CoNLL format data:
 
 ```
-Emin    B-PER
-Bey     I-PER
-'in     O
-kuklaları   O
-Tepebaşı    B-LOC
-'nda    I-LOC
-oynuyor O
-
-Ahmet   B-PER
-Paşa    I-PER
-geldi   O
+Sultan B-PER
+Abdülhamid I-PER
+İstanbul B-LOC
+'da O
+yaşıyordu O
+. O
 ```
 
 ## Supported Entity Types
 
 - **PER**: Person names
-- **LOC**: Location names
-- **ORG**: Organization names (model-dependent)
-- **MISC**: Miscellaneous entities (model-dependent)
+- **LOC**: Locations
+- **ORG**: Organizations
+- **MISC**: Miscellaneous entities
 
-## Model Information
+## Requirements
 
-### Available Models
+- Python 3.8+
+- PyTorch 1.9+
+- Transformers 4.20+
+- See `requirements.txt` for full dependencies
 
-- **latin**: Latin-script Ottoman Turkish NER model
-- **arabic**: Arabic-script Ottoman Turkish NER model  
-- **unified**: Multi-script unified model
+## License
 
-### Model Performance
-
-| Model | Script | F1-Score | Precision | Recall |
-|-------|--------|----------|-----------|--------|
-| latin | Latin  | 0.85     | 0.87      | 0.83   |
-| arabic| Arabic | 0.82     | 0.84      | 0.80   |
-| unified| Both  | 0.83     | 0.85      | 0.81   |
-
-## Development
-
-### Running Tests
-
-```bash
-# Test the evaluation pipeline
-python test_evaluation_pipeline.py
-
-# Test the main package
-python test_package.py
-```
-
-### Project Structure
-
-```
-ottoman-ner/
-├── ottoman_ner/           # Main package
-│   ├── core.py           # NER predictor
-│   ├── model_config.py   # Model configurations
-│   ├── cli.py            # Command line interface
-│   ├── utils.py          # Utility functions
-│   ├── io/               # Input/output utilities
-│   │   └── conll.py      # CONLL format handling
-│   └── evaluation/       # Evaluation utilities
-│       └── alignment.py  # Prediction alignment
-├── scripts/              # Standalone scripts
-│   ├── evaluate_latin_ner.py    # Model evaluation
-│   └── split_conll_dataset.py   # Dataset splitting
-├── data/                 # Data directory
-│   ├── raw/             # Raw CONLL files
-│   └── texts/           # Text files
-└── tests/               # Test files
-```
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests for new functionality
-5. Run the test suite
-6. Submit a pull request
+4. Add tests if needed
+5. Submit a pull request
 
 ## Citation
 
-If you use this package in your research, please cite:
+If you use this toolkit in your research, please cite:
 
 ```bibtex
-@software{ottoman_ner,
-  title={Ottoman NER: Named Entity Recognition for Ottoman Turkish},
-  author={Ottoman NER Team},
+@software{ottoman_ner_2024,
+  title={Ottoman NER: A Toolkit for Ottoman Turkish Named Entity Recognition},
+  author={Karagöz, Fatih Burak},
   year={2024},
-  url={https://github.com/yourusername/ottoman-ner}
+  url={https://github.com/fbkaragoz/ottoman-ner}
 }
 ```
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Boğaziçi University - Bucolin Lab
-- Prof. Dr. Şaziye Betül Özateş
-- Ottoman-NLP Research Project
-
-## Support
-
-For questions and support:
-- Create an issue on GitHub
-- Contact: your.email@example.com
-
 ---
 
-**Note**: This package is part of ongoing research in Ottoman Turkish NLP. Models and performance metrics are continuously being improved.
+## Author Note (TR)
+
+> 2023–2025 akademik yılı boyunca bu proje üzerinde bireysel olarak çalıştım.  
+> Geniş ölçekli ve tarihsel olarak çeşitlendirilmiş bir Osmanlı Türkçesi veri setini manuel olarak derledim, hizaladım, temizledim ve çeşitli biçimlerde etiketledim.  
+> Özellikle OCR sonrası oluşan bozulmaları karakter düzeyinde normalize etmek, eksik harfleri ve diakritik işaretleri geri kazandırmak için çeşitli veri eşleştirme ve analiz yöntemleri geliştirdim.  
+> Bunun yanı sıra, Osmanlıca metinlerin tarihsel evrimini daha iyi anlamak için **token-level entropi analizi** uygulayarak Tanzimat öncesi ve sonrası dilsel karmaşıklık farklılıklarını ortaya koymaya çalıştım.  
+>  
+> Ancak bu süreçte, bireysel olarak üstlendiğim bazı denemeler, özellikle yerel olarak geliştirdiğim çeşitli pipeline’lar ve modelleme girişimleri, hem kişisel sebeplerden hem de erken dönem amatörlüklerimden ötürü sistematik ve açık kaynaklı hale getirilemedi.  
+> Yine de bu süreç, hem teknik hem de entelektüel olarak gelişimimde çok önemli bir yer tuttu.  
+>  
+> Bu projeyi ilk tasarladığım dönemin ardından bir süreliğine doğal dil işleme çalışmalarına ara verdim. Ancak bu aradan sonra, **hocam Şaziye Betül Özateş’in ilham verici rehberliği** ve kendi içsel motivasyonum sayesinde, projeye yeniden dönüş yaptım.  
+>  
+> Sayın Özateş’in desteği, benim kişisel araştırmacı yolculuğumda sadece akademik değil, insani olarak da çok özel bir yer tutmaktadır.  
+> Kendisine ve **Boğaziçi Üniversitesi BUColin laboratuvarı** ekibine, hem önceki yayınlar hem de genel bilimsel katkıları nedeniyle içtenlikle teşekkür ederim.  
+>  
+> Bu proje yalnızca teknik bir araç değil; aynı zamanda **geçmişin dijital belleği**,  
+> ve **gelecekte Osmanlı Türkçesi üzerine yapılacak dil teknolojileri çalışmalarının altyapısıdır.**

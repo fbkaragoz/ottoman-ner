@@ -1,219 +1,266 @@
 #!/usr/bin/env python3
 """
 Ottoman NER Command Line Interface
+
+Simple and unified CLI for Ottoman Turkish Named Entity Recognition.
 """
 
-import click
+import argparse
+import sys
 import logging
+import json
 from pathlib import Path
+from typing import Optional, List
 
-from .training import OttomanNERTrainer
-from .data import ConllToLabelStudio, LabelStudioToConll, EntityAnalyzer
-from .evaluation import OttomanNEREvaluator
+# Import core functionality
+from .core import OttomanNER
+from .utils import setup_logging
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logger = setup_logging(level=logging.INFO)
 
 
-@click.group()
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
-def cli(verbose):
-    """Ottoman Turkish NER toolkit."""
-    if verbose:
+def create_parser() -> argparse.ArgumentParser:
+    """Create the main argument parser."""
+    parser = argparse.ArgumentParser(
+        prog="ottoman-ner",
+        description="Ottoman Turkish Named Entity Recognition Toolkit",
+        epilog="""
+Examples:
+  # Train a model
+  ottoman-ner train --config configs/training.json
+  
+  # Evaluate a model
+  ottoman-ner eval --model-path models/my-model --test-file data/test.conll
+  
+  # Make predictions
+  ottoman-ner predict --model-path models/my-model --text "Sultan Abdülhamid"
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable verbose logging"
+    )
+    
+    subparsers = parser.add_subparsers(
+        dest="command",
+        help="Available commands",
+        metavar="{train,eval,predict}"
+    )
+    
+    # Train command
+    train_parser = subparsers.add_parser("train", help="Train a NER model")
+    train_parser.add_argument(
+        "--config", "-c",
+        type=str,
+        required=True,
+        help="Path to training configuration file"
+    )
+    
+    # Eval command
+    eval_parser = subparsers.add_parser("eval", help="Evaluate a NER model")
+    eval_parser.add_argument(
+        "--model-path", "-m",
+        type=str,
+        required=True,
+        help="Path to trained model"
+    )
+    eval_parser.add_argument(
+        "--test-file", "-t",
+        type=str,
+        required=True,
+        help="Path to test data file"
+    )
+    eval_parser.add_argument(
+        "--output-dir", "-o",
+        type=str,
+        help="Output directory for results"
+    )
+    
+    # Predict command
+    predict_parser = subparsers.add_parser("predict", help="Make predictions")
+    predict_parser.add_argument(
+        "--model-path", "-m",
+        type=str,
+        required=True,
+        help="Path to trained model"
+    )
+    
+    # Text input options (mutually exclusive)
+    text_group = predict_parser.add_mutually_exclusive_group(required=True)
+    text_group.add_argument(
+        "--text",
+        type=str,
+        help="Text to analyze"
+    )
+    text_group.add_argument(
+        "--input-file",
+        type=str,
+        help="Input file with texts to analyze"
+    )
+    
+    predict_parser.add_argument(
+        "--output-file",
+        type=str,
+        help="Output file for predictions (JSON format)"
+    )
+    
+    return parser
+
+
+def handle_train_command(args):
+    """Handle training command."""
+    logger.info(f"🚀 Starting training with config: {args.config}")
+    
+    try:
+        # Load configuration
+        config_path = Path(args.config)
+        if not config_path.exists():
+            logger.error(f"❌ Configuration file not found: {args.config}")
+            return 1
+            
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        
+        # Initialize Ottoman NER
+        ner = OttomanNER()
+        
+        # Train model
+        results = ner.train_from_config(config)
+        
+        logger.info("✅ Training completed successfully!")
+        logger.info(f"📊 Final F1 Score: {results.get('eval_f1', 'N/A'):.4f}")
+        
+        return 0
+        
+    except Exception as e:
+        logger.error(f"❌ Training failed: {str(e)}")
+        return 1
+
+
+def handle_eval_command(args):
+    """Handle evaluation command."""
+    logger.info(f"📊 Evaluating model: {args.model_path}")
+    
+    try:
+        # Initialize Ottoman NER
+        ner = OttomanNER()
+        
+        # Evaluate model
+        results = ner.evaluate(
+            model_path=args.model_path,
+            test_file=args.test_file,
+            output_dir=args.output_dir
+        )
+        
+        # Display results
+        logger.info("✅ Evaluation completed!")
+        logger.info(f"📊 Results:")
+        logger.info(f"   Overall F1: {results['overall_f1']:.4f}")
+        logger.info(f"   Precision:  {results['overall_precision']:.4f}")
+        logger.info(f"   Recall:     {results['overall_recall']:.4f}")
+        
+        return 0
+        
+    except Exception as e:
+        logger.error(f"❌ Evaluation failed: {str(e)}")
+        return 1
+
+
+def handle_predict_command(args):
+    """Handle prediction command."""
+    logger.info(f"🔮 Loading model: {args.model_path}")
+    
+    try:
+        # Initialize Ottoman NER
+        ner = OttomanNER()
+        
+        # Load model
+        ner.load_model(args.model_path)
+        
+        # Get texts to process
+        if args.text:
+            texts = [args.text]
+        else:
+            # Read from file
+            input_path = Path(args.input_file)
+            if not input_path.exists():
+                logger.error(f"❌ Input file not found: {args.input_file}")
+                return 1
+            texts = input_path.read_text(encoding='utf-8').strip().split('\n')
+        
+        # Make predictions
+        logger.info("🔍 Making predictions...")
+        all_predictions = []
+        
+        for text in texts:
+            if text.strip():
+                entities = ner.predict(text)
+                all_predictions.append({
+                    'text': text,
+                    'entities': entities
+                })
+        
+        # Output results
+        if args.output_file:
+            output_path = Path(args.output_file)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(all_predictions, f, ensure_ascii=False, indent=2)
+            logger.info(f"💾 Predictions saved to: {args.output_file}")
+        else:
+            # Print to console
+            for pred in all_predictions:
+                print(f"\nText: {pred['text']}")
+                if pred['entities']:
+                    print("Entities:")
+                    for entity in pred['entities']:
+                        print(f"  - {entity['text']} ({entity['label']}) [{entity['start']}:{entity['end']}]")
+                else:
+                    print("  No entities found")
+        
+        logger.info("✅ Prediction completed!")
+        return 0
+        
+    except Exception as e:
+        logger.error(f"❌ Prediction failed: {str(e)}")
+        return 1
+
+
+def main():
+    """Main CLI entry point."""
+    parser = create_parser()
+    args = parser.parse_args()
+    
+    # Set logging level
+    if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-
-
-@cli.group()
-def train():
-    """Training commands."""
-    pass
-
-
-@cli.group()
-def data():
-    """Data processing commands."""
-    pass
-
-
-@cli.group()
-def evaluate():
-    """Evaluation commands."""
-    pass
-
-
-# Training commands
-@train.command()
-@click.argument('train_file', type=click.Path(exists=True))
-@click.argument('eval_file', type=click.Path(exists=True))
-@click.argument('output_dir', type=click.Path())
-@click.option('--model-name', default='dbmdz/bert-base-turkish-cased', help='HuggingFace model name')
-@click.option('--learning-rate', default=2e-5, type=float, help='Learning rate')
-@click.option('--batch-size', default=4, type=int, help='Batch size')
-@click.option('--epochs', default=3, type=int, help='Number of epochs')
-@click.option('--max-length', default=512, type=int, help='Maximum sequence length')
-def quick(train_file, eval_file, output_dir, model_name, learning_rate, batch_size, epochs, max_length):
-    """Quick training with default settings."""
-    click.echo(f"🚀 Starting quick training...")
-    click.echo(f"Train: {train_file}")
-    click.echo(f"Eval: {eval_file}")
-    click.echo(f"Output: {output_dir}")
     
-    trainer = OttomanNERTrainer.quick_train(
-        train_file=train_file,
-        eval_file=eval_file,
-        output_dir=output_dir,
-        model_name=model_name,
-        learning_rate=learning_rate,
-        batch_size=batch_size,
-        num_epochs=epochs,
-        max_length=max_length
-    )
+    # Handle commands
+    if not args.command:
+        parser.print_help()
+        return 1
     
-    click.echo("✅ Training completed!")
+    try:
+        if args.command == "train":
+            return handle_train_command(args)
+        elif args.command == "eval":
+            return handle_eval_command(args)
+        elif args.command == "predict":
+            return handle_predict_command(args)
+        else:
+            logger.error(f"❌ Unknown command: {args.command}")
+            return 1
+            
+    except KeyboardInterrupt:
+        logger.info("⏹️  Operation cancelled by user")
+        return 1
+    except Exception as e:
+        logger.error(f"❌ Command failed: {str(e)}")
+        return 1
 
 
-@train.command()
-@click.argument('train_file', type=click.Path(exists=True))
-@click.argument('eval_file', type=click.Path(exists=True))
-@click.argument('output_dir', type=click.Path())
-@click.option('--model-name', default='dbmdz/bert-base-turkish-cased', help='HuggingFace model name')
-@click.option('--learning-rate', default=2e-5, type=float, help='Learning rate')
-@click.option('--batch-size', default=4, type=int, help='Batch size')
-@click.option('--epochs', default=3, type=int, help='Number of epochs')
-@click.option('--weight-decay', default=0.01, type=float, help='Weight decay')
-@click.option('--save-steps', default=500, type=int, help='Save every N steps')
-@click.option('--eval-steps', default=500, type=int, help='Evaluate every N steps')
-@click.option('--logging-steps', default=50, type=int, help='Log every N steps')
-@click.option('--seed', default=42, type=int, help='Random seed')
-@click.option('--max-length', default=512, type=int, help='Maximum sequence length')
-def advanced(train_file, eval_file, output_dir, model_name, learning_rate, batch_size, 
-             epochs, weight_decay, save_steps, eval_steps, logging_steps, seed, max_length):
-    """Advanced training with custom parameters."""
-    click.echo(f"🚀 Starting advanced training...")
-    
-    trainer = OttomanNERTrainer(model_name=model_name, output_dir=output_dir)
-    trainer.setup_model()
-    trainer.prepare_datasets(train_file, eval_file, max_length)
-    
-    trainer.train(
-        learning_rate=learning_rate,
-        batch_size=batch_size,
-        num_epochs=epochs,
-        weight_decay=weight_decay,
-        save_steps=save_steps,
-        eval_steps=eval_steps,
-        logging_steps=logging_steps,
-        seed=seed
-    )
-    
-    click.echo("✅ Training completed!")
-
-
-# Data processing commands
-@data.command()
-@click.argument('conll_file', type=click.Path(exists=True))
-@click.argument('output_file', type=click.Path())
-@click.option('--task-prefix', default='ottoman_ner', help='Task ID prefix')
-def conll_to_labelstudio(conll_file, output_file, task_prefix):
-    """Convert CONLL format to Label Studio JSON."""
-    converter = ConllToLabelStudio()
-    num_tasks = converter.convert_file(conll_file, output_file, task_prefix)
-    click.echo(f"✅ Converted {num_tasks} tasks from {conll_file} to {output_file}")
-
-
-@data.command()
-@click.argument('json_file', type=click.Path(exists=True))
-@click.argument('output_file', type=click.Path())
-@click.option('--use-latest/--use-first', default=True, help='Use latest or first annotation')
-def labelstudio_to_conll(json_file, output_file, use_latest):
-    """Convert Label Studio JSON to CONLL format."""
-    converter = LabelStudioToConll()
-    num_sentences = converter.convert_file(json_file, output_file, use_latest)
-    click.echo(f"✅ Converted {num_sentences} sentences from {json_file} to {output_file}")
-
-
-@data.command()
-@click.argument('files', nargs=-1, type=click.Path(exists=True), required=True)
-@click.option('--detailed/--summary', default=True, help='Show detailed analysis')
-def analyze(files, detailed):
-    """Analyze CONLL dataset files."""
-    analyzer = EntityAnalyzer()
-    
-    if len(files) == 1:
-        analysis = analyzer.analyze_conll_file(files[0])
-        analyzer.print_analysis(analysis, detailed)
-    else:
-        comparison = analyzer.compare_datasets(*files)
-        for name, analysis in comparison['individual_analyses'].items():
-            analyzer.print_analysis(analysis, detailed=False)
-        
-        # Print comparison summary
-        summary = comparison['summary_comparison']
-        click.echo(f"\n{'='*60}")
-        click.echo("DATASET COMPARISON SUMMARY")
-        click.echo(f"{'='*60}")
-        
-        for name, sizes in summary['dataset_sizes'].items():
-            click.echo(f"{name:>15}: {sizes['sentences']:>6} sentences, {sizes['tokens']:>8} tokens, {sizes['entities']:>6} entities")
-
-
-@data.command()
-@click.argument('input_dir', type=click.Path(exists=True))
-@click.argument('output_dir', type=click.Path())
-@click.option('--train-ratio', default=0.7, type=float, help='Training set ratio')
-@click.option('--dev-ratio', default=0.15, type=float, help='Development set ratio')
-@click.option('--test-ratio', default=0.15, type=float, help='Test set ratio')
-@click.option('--seed', default=42, type=int, help='Random seed')
-def split(input_dir, output_dir, train_ratio, dev_ratio, test_ratio, seed):
-    """Split dataset into train/dev/test sets."""
-    # This would need to be implemented
-    click.echo("Dataset splitting functionality to be implemented...")
-
-
-# Evaluation commands
-@evaluate.command()
-@click.argument('model_path', type=click.Path(exists=True))
-@click.argument('test_file', type=click.Path(exists=True))
-@click.option('--output-dir', type=click.Path(), help='Output directory for results')
-@click.option('--save-predictions/--no-save-predictions', default=True, help='Save detailed predictions')
-@click.option('--batch-size', default=8, type=int, help='Evaluation batch size')
-def model(model_path, test_file, output_dir, save_predictions, batch_size):
-    """Evaluate a trained model."""
-    if not output_dir:
-        output_dir = f"results/eval_{Path(model_path).name}"
-    
-    click.echo(f"🔍 Evaluating model: {model_path}")
-    click.echo(f"Test file: {test_file}")
-    click.echo(f"Output: {output_dir}")
-    
-    evaluator = OttomanNEREvaluator(model_path)
-    results = evaluator.evaluate_file(
-        test_file, 
-        output_dir=output_dir,
-        save_predictions=save_predictions,
-        batch_size=batch_size
-    )
-    
-    click.echo("✅ Evaluation completed!")
-    click.echo(f"Overall F1: {results['overall']['f1']:.3f}")
-
-
-@evaluate.command()
-@click.argument('predictions_file', type=click.Path(exists=True))
-def analyze_failures(predictions_file):
-    """Analyze prediction failures from detailed predictions JSON."""
-    # This would use the analyze_failures.py logic
-    click.echo("Failure analysis functionality to be implemented...")
-
-
-# Legacy compatibility commands
-@cli.command()
-@click.argument('text')
-def predict(text):
-    """Predict entities in text (requires trained model)."""
-    click.echo("Prediction functionality to be implemented...")
-
-
-if __name__ == '__main__':
-    cli()
+if __name__ == "__main__":
+    sys.exit(main())
